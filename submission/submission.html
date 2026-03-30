@@ -2,12 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Joel</title>
+  <title>Impending Arrival Law Group</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style type="text/css">
-    html,
-    body {
+    html, body {
       background: transparent;
       margin: 0;
       padding: 0;
@@ -17,65 +16,190 @@
     #overlay-container {
       width: 640px;
       height: 480px;
+      position: relative;
+      overflow: hidden;
     }
 
-    /* Your style here... (feel free to remove this example styling) */
+    /* Skip button - YouTube style */
     #skip {
-      display: none; /* Hidden until ad starts */
+      display: none;
       position: absolute;
       bottom: 60px;
       right: 0;
       padding: 10px 18px;
-      background: rgba(0, 0, 0, 0.6);
-      border: 1px solid black;
+      background: rgba(0, 0, 0, 0.75);
+      border: 1px solid #aaa;
       border-right-width: 0;
-      font-size: 1.2rem;
+      font-size: 1rem;
       border-radius: 4px 0 0 4px;
       color: white;
       cursor: pointer;
+      z-index: 10;
+    }
+
+    #skip:hover {
+      background: rgba(0,0,0,0.9);
+    }
+
+    /* Hold screen overlay */
+    #hold-screen {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      color: white;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 20;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    #hold-screen.visible {
+      display: flex;
+    }
+
+    #hold-logo {
+      font-size: 1rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 24px;
+    }
+
+    #hold-message {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+
+    #hold-submessage {
+      font-size: 0.85rem;
+      color: #aaa;
+      font-style: italic;
+    }
+
+    #hold-dots {
+      margin-top: 24px;
+      font-size: 2rem;
+      letter-spacing: 0.5em;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
     }
   </style>
 </head>
 
 <body>
   <div id="overlay-container">
-    <!-- We've added a sample button. Feel free to remove it: -->
-    <button id="skip">
-      Skip Ad...
-    </button>
+
+    <button id="skip">Skip Ad ›</button>
+
+    <div id="hold-screen">
+      <div id="hold-logo">⚖ Impending Arrival Law Group</div>
+      <div id="hold-message"></div>
+      <div id="hold-submessage"></div>
+      <div id="hold-dots">• • •</div>
+    </div>
+
   </div>
 
   <script type="text/javascript">
-    (function(window, document){
-      // This is how you tell the parent window that the ad was successfully skipped.
-      function adSuccess() {
-        window.top.postMessage({ type: 'success' }, '*');
-      }
+    (function(window, document) {
 
       const skipButton = document.getElementById('skip');
+      const holdScreen = document.getElementById('hold-screen');
+      const holdMessage = document.getElementById('hold-message');
+      const holdSubmessage = document.getElementById('hold-submessage');
+      const audio = new Audio('just-wait-a-moment.mp3');
+
+      let skipCount = 0;
+      const MAX_SKIPS = 4; // number of holds before success
+
+      const holdMessages = [
+        {
+          main: "Please hold. Your call is important to us.",
+          sub: "Estimated wait time: impending."
+        },
+        {
+          main: "All representatives are currently assisting other clients.",
+          sub: "Your call will be answered in the order it was received."
+        },
+        {
+          main: "Thank you for your patience.",
+          sub: "A representative from the Impending Arrival Law Group will be with you shortly."
+        },
+        {
+          main: "Please continue to hold.",
+          sub: "Results not guaranteed. Results not typical. Results pending."
+        }
+      ];
+
+      function showHold() {
+        const msg = holdMessages[skipCount % holdMessages.length];
+        holdMessage.textContent = msg.main;
+        holdSubmessage.textContent = msg.sub;
+
+        // Play audio
+        audio.currentTime = 0;
+        audio.play();
+
+        // Blur the video
+        window.top.postMessage({ type: 'setVideoFilter', value: 'blur(4px) brightness(0.6)' }, '*');
+
+        // Show hold screen
+        holdScreen.classList.add('visible');
+        skipButton.style.display = 'none';
+
+        // After 4 seconds, release hold
+        setTimeout(() => {
+          holdScreen.classList.remove('visible');
+          window.top.postMessage({ type: 'setVideoFilter', value: 'none' }, '*');
+          skipCount++;
+
+          if (skipCount >= MAX_SKIPS) {
+            // Final skip - success
+            skipButton.textContent = 'Skip Ad ›';
+            skipButton.style.display = 'block';
+            skipButton.dataset.final = 'true';
+          } else {
+            skipButton.style.display = 'block';
+          }
+        }, 4000);
+      }
 
       // Listen for messages from the game shell
       window.addEventListener('message', (event) => {
         if (!event.data || !event.data.type) return;
 
         if (event.data.type === 'adStarted') {
-          // Show the skip button when the ad starts
-          skipButton.style.display = 'block';
+          // Show skip button after 5 seconds
+          setTimeout(() => {
+            skipButton.style.display = 'block';
+          }, 5000);
         }
 
-        // By default, if the user doesn't "skip" the ad before the video ends,
-        // we call fail to restart. You're welcome to replace this with a survey
-        // or other interaction instead (see examples/survey).
         if (event.data.type === 'adFinished') {
-          skipButton.style.display = 'none';
+          // Video ended without skipping - show final hold screen then fail
+          holdScreen.classList.remove('visible');
           window.top.postMessage({ type: 'fail' }, '*');
         }
       });
 
-      // Your ad overlay code goes here, we've added a simple example below:
       skipButton.addEventListener('click', () => {
-        skipButton.style.display = 'none';
-        adSuccess();
+        if (skipButton.dataset.final === 'true') {
+          // Actually skip
+          skipButton.style.display = 'none';
+          window.top.postMessage({ type: 'success' }, '*');
+        } else {
+          showHold();
+        }
       });
 
     })(window, document);
