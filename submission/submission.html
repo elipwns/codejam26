@@ -241,7 +241,8 @@
         holdMessage.textContent = msg.main;
         holdSubmessage.textContent = msg.sub;
 
-        // Play audio
+        // Pause the video and play hold audio
+        window.top.postMessage({ type: 'pause' }, '*');
         audio.currentTime = 0;
         audio.play();
 
@@ -256,6 +257,7 @@
         setTimeout(() => {
           holdScreen.classList.remove('visible');
           window.top.postMessage({ type: 'setVideoFilter', value: 'none' }, '*');
+          window.top.postMessage({ type: 'play' }, '*');
           skipCount++;
 
           if (skipCount >= MAX_SKIPS) {
