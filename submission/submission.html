@@ -93,6 +93,78 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.2; }
     }
+
+    /* Rating screen */
+    #rating-screen {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      color: white;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 30;
+      padding: 30px;
+      box-sizing: border-box;
+    }
+
+    #rating-screen.visible {
+      display: flex;
+    }
+
+    #rating-title {
+      font-size: 1rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 20px;
+    }
+
+    #rating-question {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 30px;
+      line-height: 1.4;
+    }
+
+    #rating-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .rating-btn {
+      width: 44px;
+      height: 44px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .rating-btn:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    #rating-response {
+      display: none;
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    #rating-sub {
+      display: none;
+      font-size: 0.85rem;
+      color: #aaa;
+      font-style: italic;
+    }
   </style>
 </head>
 
@@ -108,6 +180,25 @@
       <div id="hold-dots">• • •</div>
     </div>
 
+    <div id="rating-screen">
+      <div id="rating-title">⚖ Impending Arrival Law Group</div>
+      <div id="rating-question">On a scale of 1 to 10, how would you rate this ad?</div>
+      <div id="rating-buttons">
+        <button class="rating-btn">1</button>
+        <button class="rating-btn">2</button>
+        <button class="rating-btn">3</button>
+        <button class="rating-btn">4</button>
+        <button class="rating-btn">5</button>
+        <button class="rating-btn">6</button>
+        <button class="rating-btn">7</button>
+        <button class="rating-btn">8</button>
+        <button class="rating-btn">9</button>
+        <button class="rating-btn">10</button>
+      </div>
+      <div id="rating-response">We have recorded your rating.</div>
+      <div id="rating-sub">Five out of ten. Not bad.</div>
+    </div>
+
   </div>
 
   <script type="text/javascript">
@@ -117,6 +208,10 @@
       const holdScreen = document.getElementById('hold-screen');
       const holdMessage = document.getElementById('hold-message');
       const holdSubmessage = document.getElementById('hold-submessage');
+      const ratingScreen = document.getElementById('rating-screen');
+      const ratingButtons = document.querySelectorAll('.rating-btn');
+      const ratingResponse = document.getElementById('rating-response');
+      const ratingSub = document.getElementById('rating-sub');
       const audio = new Audio('just-wait-a-moment.mp3');
 
       let skipCount = 0;
@@ -186,10 +281,25 @@
         }
 
         if (event.data.type === 'adFinished') {
-          // Video ended without skipping - show final hold screen then fail
+          // Video ended - show rating screen
+          skipButton.style.display = 'none';
           holdScreen.classList.remove('visible');
-          window.top.postMessage({ type: 'fail' }, '*');
+          window.top.postMessage({ type: 'setVideoFilter', value: 'blur(4px) brightness(0.4)' }, '*');
+          ratingScreen.classList.add('visible');
         }
+      });
+
+      // Rating buttons — always respond with "Five out of ten. Not bad."
+      ratingButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('rating-buttons').style.display = 'none';
+          document.getElementById('rating-question').style.display = 'none';
+          ratingResponse.style.display = 'block';
+          ratingSub.style.display = 'block';
+          setTimeout(() => {
+            window.top.postMessage({ type: 'success' }, '*');
+          }, 2500);
+        });
       });
 
       skipButton.addEventListener('click', () => {
